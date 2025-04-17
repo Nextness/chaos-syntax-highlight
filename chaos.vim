@@ -1,89 +1,180 @@
-" Comment
-syn region MyComment start='//' end='$'
-syn region anotherComment start='---' end='$'
-hi def link MyComment Comment
-hi def link anotherComment Comment
+syntax sync minlines=100
 
-" Comptime evaluation
-" syn region chaosCompileTimeSpace start='#' end='\s'
-syn match chaosCompileTimeSpace "#[a-zA-Z0-9]*"
-"syn keyword chaosModified
+let g:chaos_default_theme = 'gruber-darker'
 
-hi def link chaosCompileTime Special
-hi def link chaosCompileTimeSpace chaosCompileTime
-hi def link chaosModified Special
+let s:chaos_control_flow_list = ['if', 'elif', 'else', 'try', 'orSet', 'orReturn', 'orExitWith', 'exitWith', 'return', 'set', 'case', 'break', 'fallthrough', 'catch', 'defer', 'goto', 'label', 'while']
+let s:chaos_keywords_list = ['let', 'for', 'inline', 'proc', 'assert', 'return', 'exitWith', 'import', 'using', 'module', 'type', 'builds', 'struct', 'global', 'flaw', 'alias', 'do', 'distinct', 'scaffold', 'enum', 'iota', 'label', 'goto', 'enumArray', 'default', 'in', 'range']
+let s:chaos_primitive_types_list = ['String', 'Char', 'Bool', 'U64', 'I64', 'Array', 'Void', 'Map']
+let s:chaos_comptime_directives_list = ['if', 'elif', 'else', 'case', 'break', 'noArguments', 'scope', 'do', 'tag', 'redacted', 'overload', 'notImplemented', 'compiler', 'let', 'extern', 'partial', 'proc', 'for', 'inline', 'type']
 
-syn keyword chaosSpecial dynamic
-hi def link chaosSpecial Special
+function! s:chaos_single_line_comment()
+    syntax region ChaosSingleLineComment start='//' end='$'
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosSingleLineComment guifg=#565f73
+    else
+        highlight ChaosSingleLineComment guifg=#ffffff
+    endif
+endfunction
 
-" Struct and Procedures
-syn keyword chaosDef struct dataArgs enum pub proc interface impl macro
-hi def link chaosDef Keyword
+function! s:chaos_multi_line_comment()
+    syntax region ChaosMultilineComment start='/\*\*' end='\*\*/'
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosMultilineComment guifg=#565f73
+    else
+        highlight ChaosMultilineComment guifg=#ffffff
+    endif
+endfunction
 
-" String interpolation
-syn region chaosString start='"' end='"'
-highlight chaosString ctermfg=DarkCyan guifg=DarkCyan
+function! s:chaos_procedures()
+    " TODO: Improve this match to make it easier to read - it looks like shit
+    syntax match ChaosProcedures /?\?[a-z]\{1\}[a-zA-Z0-9]*\ze\(\[[^]]*\]\)\?\s*(/
+    syntax match ChaosProceduresContained /?\?[a-z]\{1\}[a-zA-Z0-9]*\ze\(\[[^]]*\]\)\?\s*(/ contained
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosProcedures guifg=#96a6c8
+        highlight ChaosProceduresContained guifg=#4e74c7
+    else
+        highlight ChaosProcedures guifg=#ffffff
+    endif
+endfunction
 
-syn region MyString start='i"' end='"' contains=MyVariable
-syn region MySql start='sql"' end='"' contains=MyVariable
-syn match MyVariable /{[^}]*}/ contained
-highlight MyString ctermfg=DarkCyan guifg=DarkCyan
-highlight MySql ctermfg=DarkCyan guifg=DarkCyan
-highlight MyVariable ctermfg=White guifg=White
+function! s:chaos_string_literal()
+    syntax region ChaosStringLiteral start='«' end='»' contains=ChaosStringInterpolationVariable
+    syntax match ChaosStringInterpolationVariable /{[^}]*}/ contained
+    syntax region ChaosStringLiteralContained start='«' end='»' contains=ChaosStringInterpolationVariableContained contained
+    syntax match ChaosStringInterpolationVariableContained /{[^}]*}/ contained
 
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight link ChaosStringLiteral String
+        highlight link ChaosStringInterpolationVariable Normal
+        highlight ChaosStringLiteralContained guifg=#54bd09
+        highlight link ChaosStringInterpolationVariableContained Normal
+    else
+        highlight ChaosStringLiteral guifg=#ffffff
+        highlight ChaosStringInterpolationVariable guifg=#ffffff
+    endif
+endfunction
 
-" Keywords within functions
-syn keyword chaosAssignment let from import module const local test assert
-syn keyword chaosStatement using in as with defer goto label return set break continue fallthrough nothing exitWith orReturn orSet orExitWith likely unlikely volatile
-syn keyword chaosConditional if elif else case default try
-syn keyword chaosRepeat for while
+function! s:chaos_character_literal()
+    syntax match ChaosCharacterLiteral /"[a-zA-Z ]\{1\}/
+    syntax match ChaosCharacterLiteralContained /"[a-zA-Z ]\{1\}/ contained
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight link ChaosCharacterLiteral String
+        highlight ChaosCharacterLiteralContained guifg=#54bd09
+    else
+        highlight ChaosCharacterLiteral guifg=#ffffff
+    endif
+endfunction
 
-hi def link chaosAssignment Keyword
-hi def link chaosStatement Statement
-hi def link chaosConditional Conditional
-hi def link chaosRepeat Repeat
+function! s:chaos_structs()
+    syntax match ChaosStructs /\(\.\.\.\)\?\(&\|*\)\?\<[A-Z]\{1\}[a-zA-Z0-9]*\>\(?\|!\)\?/
+    syntax match ChaosStructsContained /\(\.\.\.\)\?\(&\|*\)\?\<[A-Z]\{1\}[a-zA-Z0-9]*\>\(?\|!\)\?/ contained
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosStructs guifg=#95a99f
+        highlight ChaosStructsContained guifg=#446956
+    else
+        highlight ChaosStructs guifg=#ffffff
+    endif
+endfunction
 
-" Chaos default types
-syn match chaosGenericStructs /\*\?\<[A-Z]\{1\}[a-zA-Z0-9]*\>?\?/
-syn match chaosType /\*\?\<\(Type\|Bool\|String\|Rune\|Char\|Array\|Dict\|Nihil\|Literal\|Const\|Async\|Self\)\>?\?/
-" syn keyword chaosType Type Bool String Rune Char Array Dict Nihil Literal Const
-syn keyword chaosError Error
-syn match chaosSignedInts /\*\?\<\(I8\|I16\|I32\|I64\)\>?\?/
-" syn keyword chaosSignedInts I8 I16 I32 I64
-syn keyword chaosUnsignedInts Byte U8 U16 U32 U64 U128
-syn keyword chaosFloats F8 F16 F32 F64
-syn keyword chaosComplex C16 C32 C64 C128
-syn keyword chaosQuarternion Q32 Q64 Q128 Q256
+function! s:chaos_errors()
+    syntax match ChaosError /[a-z]\{1\}[a-zA-Z0-9]*!/
+    syntax match ChaosErrorContained /[a-z]\{1\}[a-zA-Z0-9]*!/ contained
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosError guifg=#9e95c7
+        highlight ChaosErrorContained guifg=#8771eb
+    else
+        highlight ChaosError guifg=#ffffff
+    endif
+endfunction
 
-hi def link chaosGenericStructs Type
-hi def link chaosType Type
-hi def link chaosError Type
-hi def link chaosSignedInts Type
-hi def link chaosUnsignedInts Type
-hi def link chaosFloats Type
-hi def link chaosComplex Type
-hi def link chaosQuaternion Type
+function! s:chaos_control_flow()
+    execute 'syntax match ChaosControlFlow /\<\(' . join(s:chaos_control_flow_list, '\|') . '\)\>/'
+    execute 'syntax match ChaosControlFlowContained /\<\(' . join(s:chaos_control_flow_list, '\|') . '\)\>/ contained'
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosControlFlow guifg=#ffdd33
+        highlight ChaosControlFlowContained guifg=#dbba14
+    else
+        highlight ChaosControlFlow guifg=#ffffff
+    endif
+endfunction
 
-" Chaos default values
-syn keyword chaosBoolean true false
-syn keyword chaosIdentifiers null
+function! s:chaos_keywords()
+    execute 'syntax match ChaosKeywords /\<\(' . join(s:chaos_keywords_list, '\|') . '\)\>/'
+    execute 'syntax match ChaosKeywordsContained /\<\(' . join(s:chaos_keywords_list, '\|') . '\)\>/ contained'
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosKeywords guifg=#ffdd33
+        highlight ChaosKeywordsContained guifg=#dbba14
+    else
+        highlight ChaosKeywords guifg=#ffffff
+    endif
+endfunction
 
-hi def link chaosBoolean Boolean
-hi def link chaosIdentifiers Boolean
+function! s:chaos_primitive_types()
+    execute 'syntax match ChaosPrimitiveTypes /\(\.\.\.\)\?\(&\|*\)\?\(?\?\)\<\(' . join(s:chaos_primitive_types_list, '\|') . '\)\>\(!\?\)/'
+    execute 'syntax match ChaosPrimitiveTypesContained /\(\.\.\.\)\?\(&\|*\)\?\(?\?\)\<\(' . join(s:chaos_primitive_types_list, '\|') . '\)\>\(!\?\)/ contained'
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosPrimitiveTypes guifg=#84b59d
+        highlight ChaosPrimitiveTypesContained guifg=#4fb382
+    else
+        highlight ChaosPrimitiveTypes guifg=#ffffff
+    endif
+endfunction
 
-syn match chaosMacros "@[a-zA-Z0-9]*"
-hi def link chaosMacros Boolean
+function! s:chaos_other_literals()
+    " TODO: fix this to make sure that uninitialized variables have the
+    " correct highlight
+    " let s:three_dots = '\.\.\.'
+    let s:literals = 'null\|true\|false'
+    let s:literals_str = '\<' . s:literals . '\>'
+    execute 'syntax match ChaosOtherLiterals /' . s:literals_str . '/'
+    execute 'syntax match ChaosOtherLiteralsContained /' . s:literals_str . '/ contained'
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosOtherLiterals guifg=#f7b665
+        highlight ChaosOtherLiteralsContained guifg=#ff8d00
+    else
+        highlight ChaosOtherLiterals guifg=#ffffff
+    endif
+endfunction
 
-syn match chaosLiteral /<<[a-zA-Z0-9]*>>/
-hi def link chaosLiteral Keyword
+function! s:chaos_comptime_directives()
+    execute 'syntax match ChaosComptimeDirective /#\<\(' . join(s:chaos_comptime_directives_list, '\|') . '\)\>/'
+    if exists('g:colors_name') && g:colors_name == g:chaos_default_theme
+        highlight ChaosComptimeDirective guifg=#f43841
+    else
+        highlight ChaosComptimeDirective guifg=#ffffff
+    endif
+endfunction
 
+function! s:chaos_comptime_procs()
+    syntax region ChaosComptimeProcs
+        \ start=/^\s*\(#proc\|#for\|#type\|#inline\)/
+        \ end=/^}/
+        \ contains=
+            \ ChaosComptimeDirective,
+            \ ChaosKeywordsContained,
+            \ ChaosControlFlowContained,
+            \ ChaosPrimitiveTypesContained,
+            \ ChaosProceduresContained,
+            \ ChaosStructsContained,
+            \ ChaosCharacterLiteralContained,
+            \ ChaosStringLiteralContained,
+            \ ChaosStringInterpolationVariableContained,
+            \ ChaosErrorContained,
+            \ ChaosOtherLiteralsContained
+        \ transparent keepend extend
+endfunction
 
-" Errors
-" syntax region BracketedError start='<' end='>' contains=ErrorNamePart,ErrorPart,DotPart
-" syntax match ErrorPart /\<\w\+\>/ contained
-" syntax match DotPart /\./ contained
-" syntax match ErrorNamePart /\w\+/ contained nextgroup=BracketedError
-" highlight BracketedError ctermfg=LightMagenta guifg=LightMagenta
-" highlight ErrorNamePart ctermfg=LightMagenta guifg=LightMagenta
-" highlight ErrorPart ctermfg=Blue guifg=Blue
-" highlight DotPart ctermfg=White guifg=White
+call s:chaos_single_line_comment()
+call s:chaos_multi_line_comment()
+call s:chaos_procedures()
+call s:chaos_string_literal()
+call s:chaos_character_literal()
+call s:chaos_structs()
+call s:chaos_errors()
+call s:chaos_control_flow()
+call s:chaos_keywords()
+call s:chaos_primitive_types()
+call s:chaos_other_literals()
+call s:chaos_comptime_directives()
+call s:chaos_comptime_procs()
+
